@@ -1,9 +1,3 @@
-// ============================================================
-//  ESTRUTURA DE DADOS
-// ============================================================
-// groups = { "Nome do Grupo": [ { question, answer }, ... ] }
-// ============================================================
-
 const STORAGE_KEY = 'flashstudy_groups';
 
 let groups = {};
@@ -11,7 +5,6 @@ let currentGroupName = '';
 let currentIndex = 0;
 let isFlipped = false;
 
-// Elementos DOM
 const flashcard = document.getElementById('flashcard');
 const questionText = document.getElementById('question-text');
 const answerText = document.getElementById('answer-text');
@@ -22,17 +15,12 @@ const groupNameDisplay = document.getElementById('group-name-display');
 const groupSelector = document.getElementById('groupSelector');
 const toast = document.getElementById('toast');
 
-// ============================================================
-//  FUNÇÕES DE PERSISTÊNCIA
-// ============================================================
-
 function loadData() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
         try {
             groups = JSON.parse(stored);
             if (typeof groups !== 'object' || Array.isArray(groups)) throw new Error();
-            // Garantir que cada grupo seja um array
             for (const key in groups) {
                 if (!Array.isArray(groups[key])) groups[key] = [];
             }
@@ -68,7 +56,6 @@ function saveData() {
 
 function getCurrentCards() {
     if (!groups[currentGroupName]) {
-        // Se o grupo não existe, criar um vazio
         groups[currentGroupName] = [];
         saveData();
     }
@@ -79,10 +66,6 @@ function getGroupNames() {
     return Object.keys(groups).sort();
 }
 
-// ============================================================
-//  TOAST
-// ============================================================
-
 function showToast(msg, isError = false) {
     toast.textContent = msg;
     toast.style.borderColor = isError ? 'rgba(239, 68, 68, 0.4)' : 'rgba(167, 139, 250, 0.2)';
@@ -91,14 +74,9 @@ function showToast(msg, isError = false) {
     toast._timeout = setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
-// ============================================================
-//  RENDERIZAÇÃO
-// ============================================================
-
 function renderGroupSelector() {
     const names = getGroupNames();
     groupSelector.innerHTML = '';
-
     if (names.length === 0) {
         const msg = document.createElement('span');
         msg.textContent = 'Nenhum grupo. Crie um!';
@@ -107,7 +85,6 @@ function renderGroupSelector() {
         groupSelector.appendChild(msg);
         return;
     }
-
     names.forEach(name => {
         const btn = document.createElement('button');
         btn.textContent = name;
@@ -116,16 +93,9 @@ function renderGroupSelector() {
         span.className = 'group-cards-count';
         span.textContent = `(${count})`;
         btn.appendChild(span);
+        if (name === currentGroupName) btn.classList.add('active');
+        btn.addEventListener('click', () => switchGroup(name));
 
-        if (name === currentGroupName) {
-            btn.classList.add('active');
-        }
-
-        btn.addEventListener('click', () => {
-            switchGroup(name);
-        });
-
-        // Botão para deletar o grupo
         const delBtn = document.createElement('button');
         delBtn.textContent = '✕';
         delBtn.className = 'delete-group-btn';
@@ -146,7 +116,6 @@ function renderGroupSelector() {
 
 function renderCard() {
     const cards = getCurrentCards();
-
     if (!cards || cards.length === 0) {
         questionText.textContent = 'Nenhum flashcard neste grupo.';
         answerText.textContent = 'Adicione um!';
@@ -156,10 +125,7 @@ function renderCard() {
         groupNameDisplay.textContent = currentGroupName ? `📁 ${currentGroupName}` : '';
         return;
     }
-
-    if (currentIndex >= cards.length) {
-        currentIndex = cards.length - 1;
-    }
+    if (currentIndex >= cards.length) currentIndex = cards.length - 1;
     if (currentIndex < 0) currentIndex = 0;
 
     const card = cards[currentIndex];
@@ -179,10 +145,7 @@ function renderCard() {
 }
 
 function switchGroup(name) {
-    if (!groups[name]) {
-        groups[name] = [];
-        saveData();
-    }
+    if (!groups[name]) { groups[name] = []; saveData(); }
     currentGroupName = name;
     currentIndex = 0;
     renderGroupSelector();
@@ -190,20 +153,10 @@ function switchGroup(name) {
     showToast(`Grupo: ${name}`);
 }
 
-// ============================================================
-//  CRUD GRUPOS
-// ============================================================
-
 function createGroup(name) {
     const trimmed = name.trim();
-    if (!trimmed) {
-        showToast('Digite um nome para o grupo.', true);
-        return;
-    }
-    if (groups[trimmed]) {
-        showToast('Grupo já existe!', true);
-        return;
-    }
+    if (!trimmed) { showToast('Digite um nome para o grupo.', true); return; }
+    if (groups[trimmed]) { showToast('Grupo já existe!', true); return; }
     groups[trimmed] = [];
     saveData();
     switchGroup(trimmed);
@@ -218,23 +171,14 @@ function deleteGroup(name) {
     delete groups[name];
     saveData();
     const names = getGroupNames();
-    if (names.length > 0) {
-        switchGroup(names[0]);
-    } else {
-        currentGroupName = '';
-        currentIndex = 0;
-        renderGroupSelector();
-        renderCard();
-    }
+    if (names.length > 0) switchGroup(names[0]);
+    else { currentGroupName = ''; currentIndex = 0; renderGroupSelector(); renderCard(); }
     showToast(`Grupo "${name}" deletado.`);
 }
 
 function deleteAllCardsInGroup() {
     const cards = getCurrentCards();
-    if (!cards || cards.length === 0) {
-        showToast('Nenhum card neste grupo.', true);
-        return;
-    }
+    if (!cards || cards.length === 0) { showToast('Nenhum card neste grupo.', true); return; }
     if (!confirm(`Deletar TODOS os ${cards.length} cards do grupo "${currentGroupName}"?`)) return;
     groups[currentGroupName] = [];
     saveData();
@@ -244,19 +188,9 @@ function deleteAllCardsInGroup() {
     showToast('Todos os cards deletados do grupo.');
 }
 
-// ============================================================
-//  CRUD CARDS
-// ============================================================
-
 function addCard(question, answer) {
-    if (!currentGroupName) {
-        showToast('Crie ou selecione um grupo primeiro!', true);
-        return;
-    }
-    if (!question.trim() || !answer.trim()) {
-        showToast('Preencha pergunta e resposta!', true);
-        return;
-    }
+    if (!currentGroupName) { showToast('Crie ou selecione um grupo primeiro!', true); return; }
+    if (!question.trim() || !answer.trim()) { showToast('Preencha pergunta e resposta!', true); return; }
     const cards = getCurrentCards();
     cards.push({ question: question.trim(), answer: answer.trim() });
     saveData();
@@ -269,32 +203,20 @@ function addCard(question, answer) {
 }
 
 function deleteCurrentCard() {
-    if (!currentGroupName) {
-        showToast('Nenhum grupo selecionado.', true);
-        return;
-    }
+    if (!currentGroupName) { showToast('Nenhum grupo selecionado.', true); return; }
     const cards = getCurrentCards();
-    if (!cards || cards.length === 0) {
-        showToast('Nenhum card para deletar.', true);
-        return;
-    }
+    if (!cards || cards.length === 0) { showToast('Nenhum card para deletar.', true); return; }
     if (cards.length === 1) {
         if (!confirm('Deletar o único card deste grupo?')) return;
-        cards.pop();
-        saveData();
-        currentIndex = 0;
-        renderCard();
-        renderGroupSelector();
+        cards.pop(); saveData(); currentIndex = 0; renderCard(); renderGroupSelector();
         showToast('Último card deletado.');
         return;
     }
-    const cardName = cards[currentIndex].question.substring(0, 30) + (cards[currentIndex].question.length > 30 ? '...' : '');
+    const cardName = cards[currentIndex].question.substring(0,30) + (cards[currentIndex].question.length > 30 ? '...' : '');
     if (!confirm(`Deletar o card: "${cardName}"?`)) return;
     cards.splice(currentIndex, 1);
     saveData();
-    if (currentIndex >= cards.length) {
-        currentIndex = cards.length - 1;
-    }
+    if (currentIndex >= cards.length) currentIndex = cards.length - 1;
     renderCard();
     renderGroupSelector();
     showToast('Card deletado! 🗑️');
@@ -306,32 +228,21 @@ function resetDeck() {
     if (!cards || cards.length === 0) return;
     currentIndex = 0;
     renderCard();
-    if (isFlipped) {
-        flashcard.classList.remove('flipped');
-        isFlipped = false;
-    }
+    if (isFlipped) { flashcard.classList.remove('flipped'); isFlipped = false; }
     showToast('Deck reiniciado!');
 }
 
 function prevCard() {
     const cards = getCurrentCards();
     if (!cards || cards.length === 0) return;
-    if (currentIndex > 0) {
-        currentIndex--;
-    } else {
-        currentIndex = cards.length - 1;
-    }
+    currentIndex = currentIndex > 0 ? currentIndex - 1 : cards.length - 1;
     renderCard();
 }
 
 function nextCard() {
     const cards = getCurrentCards();
     if (!cards || cards.length === 0) return;
-    if (currentIndex < cards.length - 1) {
-        currentIndex++;
-    } else {
-        currentIndex = 0;
-    }
+    currentIndex = currentIndex < cards.length - 1 ? currentIndex + 1 : 0;
     renderCard();
 }
 
@@ -342,30 +253,27 @@ function flipCard() {
     isFlipped = !isFlipped;
 }
 
-// ============================================================
-//  EVENTOS
-// ============================================================
+// ===== EVENTOS =====
 
 document.getElementById('addGroupBtn').addEventListener('click', () => {
-    const name = document.getElementById('newGroupName').value;
-    createGroup(name);
+    createGroup(document.getElementById('newGroupName').value);
 });
 
 document.getElementById('newGroupName').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        document.getElementById('addGroupBtn').click();
-    }
+    if (e.key === 'Enter') document.getElementById('addGroupBtn').click();
 });
 
 document.getElementById('addBtn').addEventListener('click', () => {
-    const q = document.getElementById('newQuestion').value;
-    const a = document.getElementById('newAnswer').value;
-    addCard(q, a);
+    addCard(
+        document.getElementById('newQuestion').value,
+        document.getElementById('newAnswer').value
+    );
 });
 
 document.getElementById('newQuestion').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('newAnswer').focus();
 });
+
 document.getElementById('newAnswer').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('addBtn').click();
 });
@@ -376,37 +284,29 @@ document.getElementById('nextBtn').addEventListener('click', nextCard);
 document.getElementById('resetBtn').addEventListener('click', resetDeck);
 document.getElementById('deleteBtn').addEventListener('click', deleteCurrentCard);
 document.getElementById('deleteAllBtn').addEventListener('click', deleteAllCardsInGroup);
-
 flashcard.addEventListener('click', flipCard);
 
+// ===== CORREÇÃO: Espaço funciona nos inputs =====
 document.addEventListener('keydown', (e) => {
+    // Verifica se o foco está em um campo de texto
+    const active = document.activeElement;
+    const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+
     if (e.key === 'ArrowLeft') prevCard();
     else if (e.key === 'ArrowRight') nextCard();
-    else if (e.key === ' ' || e.key === 'Space') {
+    else if ((e.key === ' ' || e.key === 'Space') && !isInput) {
         e.preventDefault();
         flipCard();
-    } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        const active = document.activeElement;
-        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+    } else if ((e.key === 'Delete' || e.key === 'Backspace') && !isInput) {
         deleteCurrentCard();
     }
 });
 
-// ============================================================
-//  INICIALIZAÇÃO
-// ============================================================
+// ===== INICIALIZAÇÃO =====
 
 loadData();
-
 const names = getGroupNames();
-if (names.length > 0) {
-    currentGroupName = names[0];
-} else {
-    currentGroupName = '';
-    groups['Geral'] = [];
-    saveData();
-    currentGroupName = 'Geral';
-}
-
+if (names.length > 0) currentGroupName = names[0];
+else { currentGroupName = 'Geral'; groups['Geral'] = []; saveData(); }
 renderGroupSelector();
 renderCard();
