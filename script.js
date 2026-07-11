@@ -253,8 +253,7 @@ function flipCard() {
     isFlipped = !isFlipped;
 }
 
-// ===== EVENTOS =====
-
+// ===== EVENTOS DOS BOTÕES =====
 document.getElementById('addGroupBtn').addEventListener('click', () => {
     createGroup(document.getElementById('newGroupName').value);
 });
@@ -286,24 +285,36 @@ document.getElementById('deleteBtn').addEventListener('click', deleteCurrentCard
 document.getElementById('deleteAllBtn').addEventListener('click', deleteAllCardsInGroup);
 flashcard.addEventListener('click', flipCard);
 
-// ===== CORREÇÃO: Espaço funciona nos inputs =====
+// ============================================================
+//  EVENTOS DE TECLADO CORRIGIDOS — ESPAÇO FUNCIONA NOS INPUTS
+// ============================================================
 document.addEventListener('keydown', (e) => {
-    // Verifica se o foco está em um campo de texto
+    // Verifica se o foco está em um campo de input ou textarea
     const active = document.activeElement;
-    const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+    const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
 
-    if (e.key === 'ArrowLeft') prevCard();
-    else if (e.key === 'ArrowRight') nextCard();
-    else if ((e.key === ' ' || e.key === 'Space') && !isInput) {
+    // Se estiver em um input, deixa o navegador tratar normalmente
+    if (isInput) {
+        return; // ← AQUI É A CORREÇÃO PRINCIPAL
+    }
+
+    // Fora dos inputs, os atalhos funcionam
+    if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevCard();
+    } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextCard();
+    } else if (e.key === ' ' || e.key === 'Space') {
         e.preventDefault();
         flipCard();
-    } else if ((e.key === 'Delete' || e.key === 'Backspace') && !isInput) {
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
         deleteCurrentCard();
     }
 });
 
 // ===== INICIALIZAÇÃO =====
-
 loadData();
 const names = getGroupNames();
 if (names.length > 0) currentGroupName = names[0];
